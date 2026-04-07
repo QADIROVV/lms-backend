@@ -6,12 +6,12 @@
   "private": true,
   "license": "MIT",
   "scripts": {
+    "prebuild": "npx prisma generate",        
     "build": "nest build",
-    "format": "prettier --write \"src/**/*.ts\"",
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start:prod": "node dist/main.js",
+    "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "seed": "ts-node prisma/seed.ts"
   },
