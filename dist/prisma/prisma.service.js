@@ -16,17 +16,17 @@ const client_1 = require("@prisma/client");
 let PrismaService = PrismaService_1 = class PrismaService extends client_1.PrismaClient {
     constructor() {
         super({
-            log: ['warn', 'error'],
+            log: ['warn', 'error', 'query'],
         });
         this.logger = new common_1.Logger(PrismaService_1.name);
     }
     async onModuleInit() {
         await this.$connect();
-        this.logger.log('Database connected successfully');
+        this.logger.log('✅ MongoDB connected successfully');
     }
     async onModuleDestroy() {
         await this.$disconnect();
-        this.logger.log('Database disconnected');
+        this.logger.log('❌ MongoDB disconnected');
     }
 };
 exports.PrismaService = PrismaService;

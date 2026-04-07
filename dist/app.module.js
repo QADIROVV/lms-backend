@@ -17,6 +17,7 @@ const homework_module_1 = require("./homework/homework.module");
 const tests_module_1 = require("./tests/tests.module");
 const results_module_1 = require("./results/results.module");
 const statistics_module_1 = require("./statistics/statistics.module");
+const prisma_module_1 = require("./prisma/prisma.module");
 const logging_middleware_1 = require("./common/middleware/logging.middleware");
 let AppModule = class AppModule {
     configure(consumer) {
@@ -28,6 +29,7 @@ exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
             config_1.ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+            prisma_module_1.PrismaModule,
             auth_module_1.AuthModule,
             users_module_1.UsersModule,
             courses_module_1.CoursesModule,

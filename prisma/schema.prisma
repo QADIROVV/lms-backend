@@ -7,7 +7,6 @@ datasource db {
   url      = env("MONGO_URI")
 }
 
-// ENUMS
 enum Role {
   ADMIN
   TEACHER
@@ -19,7 +18,7 @@ enum EnrollmentStatus {
   DROPPED
 }
 
-// MODELS
+// ================= User =================
 model User {
   id          String   @id @map("_id") @default(auto()) @db.ObjectId
   fullName    String
@@ -31,67 +30,83 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  taughtCourses  Course[]
+  taughtCourses  Course[]     @relation("TeacherCourses")
   enrollments    Enrollment[]
   submissions    Submission[]
   results        Result[]
   refreshTokens  RefreshToken[]
+
+  @@map("users")
 }
 
+// ================= RefreshToken =================
 model RefreshToken {
   id        String   @id @map("_id") @default(auto()) @db.ObjectId
   token     String   @unique
-  userId    String
+  userId    String   @db.ObjectId
   user      User     @relation(fields: [userId], references: [id])
   expiresAt DateTime
   createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
 }
 
+// ================= Course =================
 model Course {
   id          String   @id @map("_id") @default(auto()) @db.ObjectId
   name        String
   description String
   price       Float
   duration    Int
-  teacherId   String
-  teacher     User     @relation(fields: [teacherId], references: [id])
+  teacherId   String   @db.ObjectId
+  teacher     User     @relation("TeacherCourses", fields: [teacherId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   enrollments Enrollment[]
   homeworks   Homework[]
   tests       Test[]
+
+  @@map("courses")
 }
 
+// ================= Enrollment =================
 model Enrollment {
   id        String           @id @map("_id") @default(auto()) @db.ObjectId
-  studentId String
-  courseId  String
+  studentId String           @db.ObjectId
+  courseId  String           @db.ObjectId
   status    EnrollmentStatus @default(ACTIVE)
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
   student User   @relation(fields: [studentId], references: [id])
   course  Course @relation(fields: [courseId], references: [id])
+
+  @@unique([studentId, courseId])
+  @@map("enrollments")
 }
 
+// ================= Homework =================
 model Homework {
   id          String   @id @map("_id") @default(auto()) @db.ObjectId
   title       String
   description String
   deadline    DateTime
-  courseId    String
+  courseId    String   @db.ObjectId
   course      Course   @relation(fields: [courseId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   submissions Submission[]
+
+  @@map("homeworks")
 }
 
+// ================= Submission =================
 model Submission {
   id         String   @id @map("_id") @default(auto()) @db.ObjectId
-  studentId  String
-  homeworkId String
+  studentId  String   @db.ObjectId
+  homeworkId String   @db.ObjectId
   content    String
   fileUrl    String?
   createdAt  DateTime @default(now())
@@ -99,23 +114,30 @@ model Submission {
 
   student  User     @relation(fields: [studentId], references: [id])
   homework Homework @relation(fields: [homeworkId], references: [id])
+
+  @@unique([studentId, homeworkId])
+  @@map("submissions")
 }
 
+// ================= Test =================
 model Test {
   id        String   @id @map("_id") @default(auto()) @db.ObjectId
   title     String
-  courseId  String
+  courseId  String   @db.ObjectId
   course    Course   @relation(fields: [courseId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   questions Question[]
   results   Result[]
+
+  @@map("tests")
 }
 
+// ================= Question =================
 model Question {
   id            String   @id @map("_id") @default(auto()) @db.ObjectId
-  testId        String
+  testId        String   @db.ObjectId
   text          String
   options       String[]
   correctAnswer String
@@ -123,31 +145,40 @@ model Question {
 
   test    Test     @relation(fields: [testId], references: [id])
   answers Answer[]
+
+  @@map("questions")
 }
 
+// ================= Answer =================
 model Answer {
   id         String   @id @map("_id") @default(auto()) @db.ObjectId
-  resultId   String
-  questionId String
+  resultId   String   @db.ObjectId
+  questionId String   @db.ObjectId
   answer     String
   isCorrect  Boolean
   createdAt  DateTime @default(now())
 
   result   Result   @relation(fields: [resultId], references: [id])
   question Question @relation(fields: [questionId], references: [id])
+
+  @@map("answers")
 }
 
+// ================= Result =================
 model Result {
   id             String   @id @map("_id") @default(auto()) @db.ObjectId
-  studentId      String
-  testId         String
+  studentId      String   @db.ObjectId
+  testId         String   @db.ObjectId
   totalQuestions Int
   correctCount   Int
   wrongCount     Int
   percentage     Float
   createdAt      DateTime @default(now())
 
-  student User     @relation(fields: [studentId], references: [id])
-  test    Test     @relation(fields: [testId], references: [id])
+  student User   @relation(fields: [studentId], references: [id])
+  test    Test   @relation(fields: [testId], references: [id])
   answers Answer[]
+
+  @@unique([studentId, testId])
+  @@map("results")
 }
