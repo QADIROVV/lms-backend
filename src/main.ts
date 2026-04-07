@@ -30,7 +30,7 @@ async function bootstrap() {
   app.use(express.static(frontendPath));
 
   // ✅ FIX QILINDI
-  app.use('*', (req: Request, res: Response) => {
+  app.use('/', (req: Request, res: Response) => {
     if (!req.originalUrl.startsWith('/api')) {
       res.sendFile(join(frontendPath, 'index.html'));
     }

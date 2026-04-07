@@ -8,16 +8,13 @@ import { HomeworkModule } from './homework/homework.module';
 import { TestsModule } from './tests/tests.module';
 import { ResultsModule } from './results/results.module';
 import { StatisticsModule } from './statistics/statistics.module';
-import { PrismaModule } from './prisma/prisma.module';
+import { PrismaModule } from './prisma/prisma.module'; 
 import { LoggingMiddleware } from './common/middleware/logging.middleware';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
-    }),
-    PrismaModule,
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    PrismaModule, 
     AuthModule,
     UsersModule,
     CoursesModule,

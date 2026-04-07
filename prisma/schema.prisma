@@ -3,10 +3,11 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "mongodb"
+  url      = env("MONGO_URI")
 }
 
+// ENUMS
 enum Role {
   ADMIN
   TEACHER
@@ -18,8 +19,9 @@ enum EnrollmentStatus {
   DROPPED
 }
 
+// MODELS
 model User {
-  id          String   @id @default(uuid())
+  id          String   @id @map("_id") @default(auto()) @db.ObjectId
   fullName    String
   age         Int
   phone       String   @unique
@@ -29,78 +31,65 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Relations
-  taughtCourses  Course[]     @relation("TeacherCourses")
+  taughtCourses  Course[]
   enrollments    Enrollment[]
   submissions    Submission[]
   results        Result[]
   refreshTokens  RefreshToken[]
-
-  @@map("users")
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid())
+  id        String   @id @map("_id") @default(auto()) @db.ObjectId
   token     String   @unique
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
   expiresAt DateTime
   createdAt DateTime @default(now())
-
-  @@map("refresh_tokens")
 }
 
 model Course {
-  id          String   @id @default(uuid())
+  id          String   @id @map("_id") @default(auto()) @db.ObjectId
   name        String
   description String
   price       Float
-  duration    Int      // days
+  duration    Int
   teacherId   String
-  teacher     User     @relation("TeacherCourses", fields: [teacherId], references: [id])
+  teacher     User     @relation(fields: [teacherId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Relations
   enrollments Enrollment[]
   homeworks   Homework[]
   tests       Test[]
-
-  @@map("courses")
 }
 
 model Enrollment {
-  id        String           @id @default(uuid())
+  id        String           @id @map("_id") @default(auto()) @db.ObjectId
   studentId String
   courseId  String
   status    EnrollmentStatus @default(ACTIVE)
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
-  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  @@unique([studentId, courseId])
-  @@map("enrollments")
+  student User   @relation(fields: [studentId], references: [id])
+  course  Course @relation(fields: [courseId], references: [id])
 }
 
 model Homework {
-  id          String   @id @default(uuid())
+  id          String   @id @map("_id") @default(auto()) @db.ObjectId
   title       String
   description String
   deadline    DateTime
   courseId    String
-  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course      Course   @relation(fields: [courseId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   submissions Submission[]
-
-  @@map("homeworks")
 }
 
 model Submission {
-  id         String   @id @default(uuid())
+  id         String   @id @map("_id") @default(auto()) @db.ObjectId
   studentId  String
   homeworkId String
   content    String
@@ -108,57 +97,48 @@ model Submission {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  student  User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  homework Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
-
-  @@unique([studentId, homeworkId])
-  @@map("submissions")
+  student  User     @relation(fields: [studentId], references: [id])
+  homework Homework @relation(fields: [homeworkId], references: [id])
 }
 
 model Test {
-  id        String   @id @default(uuid())
+  id        String   @id @map("_id") @default(auto()) @db.ObjectId
   title     String
   courseId  String
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   questions Question[]
   results   Result[]
-
-  @@map("tests")
 }
 
 model Question {
-  id            String   @id @default(uuid())
+  id            String   @id @map("_id") @default(auto()) @db.ObjectId
   testId        String
   text          String
   options       String[]
   correctAnswer String
   createdAt     DateTime @default(now())
 
-  test    Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  test    Test     @relation(fields: [testId], references: [id])
   answers Answer[]
-
-  @@map("questions")
 }
 
 model Answer {
-  id         String   @id @default(uuid())
+  id         String   @id @map("_id") @default(auto()) @db.ObjectId
   resultId   String
   questionId String
   answer     String
   isCorrect  Boolean
   createdAt  DateTime @default(now())
 
-  result   Result   @relation(fields: [resultId], references: [id], onDelete: Cascade)
-  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-
-  @@map("answers")
+  result   Result   @relation(fields: [resultId], references: [id])
+  question Question @relation(fields: [questionId], references: [id])
 }
 
 model Result {
-  id             String   @id @default(uuid())
+  id             String   @id @map("_id") @default(auto()) @db.ObjectId
   studentId      String
   testId         String
   totalQuestions Int
@@ -167,10 +147,7 @@ model Result {
   percentage     Float
   createdAt      DateTime @default(now())
 
-  student User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  test    Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  student User     @relation(fields: [studentId], references: [id])
+  test    Test     @relation(fields: [testId], references: [id])
   answers Answer[]
-
-  @@unique([studentId, testId])
-  @@map("results")
 }
