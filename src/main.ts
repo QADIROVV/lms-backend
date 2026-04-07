@@ -3,16 +3,17 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { LoggingMiddleware } from './common/middleware/logging.middleware';
+import { join } from 'path';
+import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
 
-  // Global prefix
+  // API prefix
   app.setGlobalPrefix('api/v1');
 
-  // Global pipes
+  // Validation
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -30,61 +31,35 @@ async function bootstrap() {
   // CORS
   app.enableCors({
     origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
-  // Swagger configuration
+  // ===== FRONTEND SERVE (MUHIM) =====
+  const frontendPath = join(__dirname, '..', 'public');
+  app.use(express.static(frontendPath));
+
+  // SPA routing (React/Vite uchun)
+  app.get('*', (req, res) => {
+    if (!req.originalUrl.startsWith('/api')) {
+      res.sendFile(join(frontendPath, 'index.html'));
+    }
+  });
+
+  // ===== SWAGGER =====
   const config = new DocumentBuilder()
     .setTitle('LMS API')
-    .setDescription(
-      `
-      ## Learning Management System API
-      
-      A comprehensive REST API for managing courses, enrollments, homework, tests, and results.
-      
-      ### Roles
-      - **ADMIN**: Full system access, manage courses and users
-      - **TEACHER**: Manage own courses, create homework and tests, view statistics
-      - **STUDENT**: Browse courses, submit homework, take tests
-      
-      ### Authentication
-      Use Bearer token from /auth/login endpoint.
-    `,
-    )
+    .setDescription('Learning Management System API')
     .setVersion('1.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'JWT',
-        description: 'Enter JWT token',
-        in: 'header',
-      },
-      'JWT-auth',
-    )
-    .addTag('Auth', 'Authentication endpoints')
-    .addTag('Users', 'User management endpoints')
-    .addTag('Courses', 'Course management endpoints')
-    .addTag('Enrollments', 'Enrollment management endpoints')
-    .addTag('Homework', 'Homework management endpoints')
-    .addTag('Tests', 'Test management endpoints')
-    .addTag('Results', 'Test results endpoints')
-    .addTag('Statistics', 'Statistics and analytics endpoints')
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true,
-    },
-  });
+  SwaggerModule.setup('api', app, document);
 
+  // ===== PORT (ENG MUHIM) =====
   const port = process.env.PORT || 3000;
-  await app.listen(port);
-  logger.log(`🚀 Application running on: http://localhost:${port}`);
-  logger.log(`📚 Swagger docs at: http://localhost:${port}/api`);
+  await app.listen(port, '0.0.0.0'); // Render uchun MUHIM
+
+  logger.log(`🚀 Server running on port ${port}`);
 }
 
 bootstrap();
