@@ -4,61 +4,70 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { join } from 'path';
-import { Request, Response } from 'express';
 import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
 
-  // API prefix
+  // 1. API prefix - hamma API so'rovlar /api/v1 bilan boshlanadi
   app.setGlobalPrefix('api/v1');
 
-  // Validation
+  // 2. CORS - Frontend va Backend bitta linkda bo'lsa ham '*' turgani xavfsiz
+  app.enableCors({
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
+
+  // 3. Validation
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
+      forbidNonWhitelisted: true,
       transform: true,
     }),
   );
 
-  // Error filter
+  // 4. Global Error Filter
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  // CORS
-  app.enableCors({ origin: '*' });
-
-  /**
-   * 🔥 ENG MUHIM QISM
-   * Render productionda dist/public ishlaydi
-   */
-  const frontendPath = join(__dirname, 'public');
-
-  app.use(express.static(frontendPath));
-
-  // SPA routing fix
-app.use((req: any, res: any, next: any) => {
-  if (!req.originalUrl.startsWith('/api')) {
-    return res.sendFile(join(frontendPath, 'index.html'));
-  }
-  next();
-});
-
-  // Swagger
+  // 5. SWAGGER (Faqat /api manzili orqali kiriladi)
   const config = new DocumentBuilder()
     .setTitle('LMS API')
+    .setDescription('LMS platformasi uchun API hujjatlari')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
-
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api/docs', app, document); // Swagger endi /api/docs da
 
+  /**
+   * ── FRONTENDNI SERVE QILISH (SPA FIX) ──────────────────────────────
+   * Render-da backend 'dist' ichida ishlaydi. 
+   * Frontend 'public' papkasiga joylanishi kerak.
+   */
+  const frontendPath = join(__dirname, '..', 'public'); 
+  
+  // Statik fayllarni (js, css, images) yuklash
+  app.use(express.static(frontendPath));
+
+  // SPA Routing: Agar so'rov /api bilan boshlanmasa, index.html ni qaytarish
+  // Bu React Router (BrowserRouter) ishlashi uchun shart!
+  const server = app.getHttpAdapter().getInstance();
+  server.get('*', (req: any, res: any, next: any) => {
+    const url = req.originalUrl;
+    if (url.startsWith('/api/v1') || url.startsWith('/api/docs')) {
+      return next();
+    }
+    res.sendFile(join(frontendPath, 'index.html'));
+  });
+
+  // 6. PORT sozlamasi
   const port = process.env.PORT || 3000;
-
   await app.listen(port, '0.0.0.0');
 
-  logger.log(`🚀 Server running on port ${port}`);
+  logger.log(`🚀 Server http://localhost:${port}/api/docs da ishga tushdi`);
 }
 
 bootstrap();
